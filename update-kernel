@@ -11,6 +11,8 @@ new_kernel="bzImage-3.14.32-xxxx-$kernel"
 system_map="System.map-3.14.32-xxxx-"
 
 # On vérifie si la mise à jour a été faite
+# NOTE: On peut retirer le lockfile si on veut remettre
+# à jour une nouvelle fois
 
 if [[ -f $LOCKFILE ]]; then
    tput setaf 1
@@ -42,7 +44,7 @@ if (( $? ==  0 )) ; then
    tput sgr0
 else
    tput setaf 1
-   echo "Téléchaargement échoué!"
+   echo "Téléchargement échoué!"
    tput sgr0
    exit 1
 fi
@@ -55,7 +57,7 @@ if (( $? ==  0 )) ; then
    tput sgr0
 else
    tput setaf 1
-   echo "Téléchaargement échoué!"
+   echo "Téléchargement échoué!"
    tput sgr0
    exit 1
 fi
