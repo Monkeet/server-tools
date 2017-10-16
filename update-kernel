@@ -1,0 +1,91 @@
+#!/bin/bash
+# Script de mise a jour du noyau (kernel) OVH
+# Auteur : Étienne St-Amant-Audet
+
+# À modifier lorsqu'un nouveau noyau est disponible
+
+OVH_KERNELS="ftp://ftp.ovh.net/made-in-ovh/bzImage/latest-production/"
+LOCKFILE="/boot/update.lock"
+kernel=$(uname -r | cut -d "-" -f 3-) #grs-ipv6-64
+new_kernel="bzImage-3.14.32-xxxx-$kernel"
+system_map="System.map-3.14.32-xxxx-"
+
+# On vérifie si la mise à jour a été faite
+
+if [[ -f $LOCKFILE ]]; then
+   tput setaf 1
+   echo "Attention! Le kernel a déjà été mis à jour!"
+   tput sgr0
+   exit 1
+fi
+
+cd /boot
+
+# On sauvegarde l'ancien noyau
+
+if [[ -f $new_kernel ]]; then
+
+   mv $new_kernel $new_kernel.old
+   mv $system_map$kernel $system_map$kernel.old
+
+   echo "Noyau $kernel.old sauvegardé"
+
+fi
+
+# On télécharge le nouveau noyau
+
+wget $OVH_KERNELS/$new_kernel
+
+if (( $? ==  0 )) ; then
+   tput setaf 2
+   echo "Téléchargement réussi!"
+   tput sgr0
+else
+   tput setaf 1
+   echo "Téléchaargement échoué!"
+   tput sgr0
+   exit 1
+fi
+
+wget $OVH_KERNELS/$system_map$kernel
+
+if (( $? ==  0 )) ; then
+   tput setaf 2
+   echo -e "Téléchargement réussi!"
+   tput sgr0
+else
+   tput setaf 1
+   echo "Téléchaargement échoué!"
+   tput sgr0
+   exit 1
+fi
+
+# Modification du noyau courant
+
+# Si on utilise grub2..
+
+if [ -d "/boot/grub2" ]; then
+   
+   grub2-mkconfig -o /boot/grub2/grub.cfg
+
+# Sinon, grub1...
+
+else
+   
+   cp /boot/grub/grub.conf /boot/grub/grub.$(date +%Hh%M-%d-%m-%Y).conf
+   sed -i "s/$(uname -r)/3.14.32-xxxx-$kernel/g" "/boot/grub/grub.conf"
+
+fi
+
+# Vérification
+
+if (( $? ==  0 )) ; then
+   tput setaf 2
+   echo -e "Succès! Il ne reste plus qu'à redémarrer sur le nouveau noyau"
+   touch $LOCKFILE
+   tput sgr0
+else
+   tput setaf 1
+   echo -e "Mise à jour échouée !"
+   tput sgr0
+fi
