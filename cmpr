@@ -1,0 +1,71 @@
+#!/usr/bin/bash
+
+# Auteur : Étienne St-Amant-Audet
+# Cours  : 420 155 MO
+# Date   : 15 mai 2015
+#
+# Fichier : cmpr
+#
+# Ce script permet de demander à l'utilisateur un nom de fichier
+# a compresser et un type de compression; le caractère b ou B 
+# pour bzip2, le caractère g ou G pour gzip ou le caractère x 
+# ou X pour xz. Le script ne reçoit aucun paramètre.
+
+# Définition de la fonction cmprFic()
+
+cmprFic() {
+   if (( $# != 3 )) ; then
+      echo -e "\nErreur, cette fonction doit recevoir exactement 3 paramètres." >&2
+      echo -e "\nVous devez donner 3 arguments après l'appel de la fonction ex: (cmprFic(* * *))" >&2
+      return 1
+   fi
+   $1 -9 < $2 > $2.$3 &> /dev/null
+   if (( $? != 0 )) ; then
+      echo "Erreur, la compression du fichier $2 a échouée." >&2
+      rm $2.$3
+      return 1
+   fi
+}
+
+# Début du script
+
+if (( $# > 0 )) ; then
+   echo -e "\nErreur, ce script ne doit pas recevoir de paramètres.\n" >&2
+   exit 1
+fi
+echo -en "\nEntrez le nom du fichier à compresser : "
+read nomFic
+if [[ -z $nomFic ]] ; then
+   echo -e "\nErreur, vous devez entrez un nom de fichier.\n" >&2
+   exit 1
+elif [[ !(-e $nomFic) ]] ; then
+   echo -e "\nErreur, le fichier $nomFic n'existe pas.\n" >&2
+   exit 1
+elif [[ -e $nomFic && !(-f $nomFic) ]] ; then
+   echo -e "\nErreur, le fichier $nomFic n'est pas un fichier ordinaire.\n" >&2
+   exit 1
+elif [[ !(-r $nomFic) ]] ; then
+   echo -e "\nErreur, le fichier $nomFic n'est pas permis en lecture.\n" >&2
+   exit 1
+elif [[ -e $nomFic && !(-s $nomFic) ]] ; then
+   echo -e "\nErreur, le fichier $nomFic est vide.\n" >&2
+   exit 1
+fi
+declare typeCompress="faux"
+until [[ "$typeCompress" == "b" || "$typeCompress" == "B" || "$typeCompress" == "g" || "$typeCompress" == "G" || "$typeCompress" == "x" || "$typeCompress" == "X" ]] ; do
+   echo -n "Entrez le type de compression souhaité (X(xz), B(bz2) ou G(gzip) : "
+   read typeCompress
+   case $typeCompress in 
+      ["bB"] )
+         cmprFic /usr/bin/bzip2 $nomFic bz2
+         ;;
+      ["gG"] )
+         cmprFic /usr/bin/gzip $nomFic gz
+         ;;
+      ["Xx"] ) 
+         cmprFic /usr/bin/xz $nomFic xz
+         ;;
+      * )
+         echo -e "\nErreur, le type de compression $typeCompress n'est pas valide.\n" >&2
+   esac
+done

@@ -1,0 +1,27 @@
+#!/usr/bin/bash
+
+# Auteur : Étienne St-Amant-Audet
+# Cours  : 420 155 MO
+# Date   : 15 mai 2015
+#
+# Fichier : lireVideo
+#
+# Ce script installe tous les codec pour lire tous les types de video sous fedora..
+
+# Début du script
+
+if [[ $UID != 0 ]] ; then
+   echo -e "\nVous devez être en root pour exécuter ce script.\n"
+else
+
+yum localinstall -y --nogpgcheck http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+
+yum update -y
+
+yum install -y gstreamer-plugins-bad gstreamer-plugins-bad-free-extras gstreamer-plugins-bad-nonfree gstreamer-plugins-ugly gstreamer-ffmpeg gstreamer1-libav gstreamer1-plugins-bad-free-extras gstreamer1-plugins-bad-freeworld gstreamer1-plugins-base-tools updates gstreamer1-plugins-good-extras gstreamer1-plugins-ugly gstreamer1-plugins-bad-free gstreamer1-plugins-good gstreamer1-plugins-base gstreamer1 x264 vlc
+
+fi
+
+
+
+

@@ -1,0 +1,81 @@
+#!/usr/bin/bash
+
+# Auteur : Étienne St-Amant-Audet
+# Cours  : 420 217 MO
+# Date   : 6 octobre 2015
+#
+# Fichier : sauve-etc
+#
+# Ce script permet d'archiver le contenu du répertoire /etc dans le 
+# répertoire d'accueil d'un utilisateur quelconque.  
+# Il reçoit seulement un paramètre : le fichier nom d'utilisateur
+#
+# Début du script
+
+# Validation de l'utilisateur root
+
+if (( UID != 0 )) ; then
+   echo -e "\nVous devez être root pour exécuter ce script.\n" >&2
+   exit 1 
+fi
+   
+ok="vrai"
+
+# Validation du nombre de paramètres
+
+if (( $# < 1 )) ; then
+   echo -e "\nErreur, il n'y a pas de paramètre envoyé au script.\n" >&2
+   ok="faux"
+elif (( $# > 1 )) ; then
+   echo -e "\nErreur, il y a plus d'un paramètre envoyé au script.\n" >&2
+   ok="faux"
+fi
+
+if [[ $ok == "faux" ]] ; then
+   echo -e "\nCe script soit recevoir un seul paramètre."
+   echo -e "\nVous devez mettre LE paramètre en argument juste après"
+   echo -e "l'appel du script. Ex : $0 PARAM\n"
+   exit 1
+fi
+
+# Validation du nom de l'utilisateur 
+
+connait=$(grep "^$1:" /etc/passwd)
+
+if [[ -z "$connait" ]] ; then
+   echo -e "\nL'utilisateur $1 n'est pas connu du système.\n"
+   exit 1
+fi
+
+# Validation que /home de l'utilisateur existe et que c'est un dossier
+
+if [[ ! -e /home/$1 ]] ; then
+   echo -e "\nErreur, le dossier /home/$1 n'existe pas.\n" >&2
+   exit 1
+elif [[ ! -d /home/$1 ]] ; then
+   echo -e "\nErreur, le fichier /home/$1 n'est pas un repertoire.\n" >&2
+   exit 1
+fi
+
+# Création de l'archive 
+
+echo -e "\nL'archive va être créée.\n"
+tar -cJf /home/$1/etc.txz /etc &> /dev/null
+
+if (( $? != 0 )) ; then
+   echo -e "\nErreur, la création de l'archive a échouée.\n" >&2
+   rm /home/$1/etc.txz
+   exit 1
+fi
+
+# Changement du propriétaire de l'archive 
+
+chown $1:$1 /home/$1/etc.txz
+
+if (( $? != 0 )) ; then
+   echo -e "\nErreur, la modification du propriétaire de l'archive "
+   echo "a échouée.\n" >&2
+   exit 1
+fi
+
+echo -e "\nL'archive /home/$1/etc.txz a été créée avec succès!\n"

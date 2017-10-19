@@ -1,0 +1,105 @@
+#!/usr/bin/bash
+
+# Auteur : Étienne St-Amant-Audet
+# Cours  : 420 155 MO
+# Date   : 15 mai 2015
+#
+# Fichier : compte
+#
+# Ce script permet de gérer des comptes utilisateurs.
+# Il ne reçoit aucun paramètre, car il contient un menu.
+# L'utilisateur peut choisir entre 3 différents choix :
+# 1) Créer un compte, 2) Supprimer un compte et 3) Quitter.
+# Ce script contient 2 fonctions; creerCompte() et supprimerCompte().
+
+# Définition de la fonction creerCompte()
+
+creerCompte() {
+   local utilisateur
+   echo -en "\nEntrez le nom de login de l'utilisateur : "
+   read utilisateur
+   if [[ -z $utilisateur ]] ; then
+      echo -e "\nErreur, le nom d'utilisateur ne peut pas être vide.\n" >&2
+   else
+      grep $utilisateur /etc/passwd &> /dev/null
+      if (( $? == 0 )) ; then
+         echo -e "\nErreur, l'utilisateur $utilisateur existe déjà.\n" >&2
+      else
+         useradd $utilisateur
+         if (( $? != 0 )) ; then
+            echo -e "\nErreur, la création du compte $utilisateur a échouée.\n" >&2
+            return 1
+         else
+            echo -e "\nLe compte utilisateur $utilisateur a été créé.\n"
+         fi
+      fi
+   fi
+}
+
+# Définition de la fonction supprimerCompte()
+
+supprimerCompte() {
+   local utilisateur
+   local confirmation
+   echo -en "\nEntrez le nom de login de l'utilisateur : "
+   read utilisateur
+   if [[ -z $utilisateur ]] ; then
+      echo -e "\nErreur, le nom d'utilisateur ne peut pas être vide.\n" >&2
+   else
+      grep $utilisateur /etc/passwd &> /dev/null
+      if (( $? != 0 )) ; then
+         echo -e "\nErreur, l'utilisateur $utilisateur n'existe pas.\n" >&2
+      else
+         while [[ $confirmation != "o" && $confirmation != "O" && $confirmation != "n" && $confirmation != "N" ]] ; do
+            echo -ne "\nVoulez-vous vraiment supprimer l'utilisateur $utilisateur (O/N)? "
+            read confirmation
+            case $confirmation in
+               ["oO"] )
+                  userdel -r $utilisateur
+                  echo -e "\nL'utilisateur $utilisateur a été supprimé.\n"
+                  if (( $? != 0 )) ; then
+                     echo -e "\nErreur, l'utilisateur $utilisateur n'a pas pu être supprimé.\n" >&2
+                     return 1
+                  fi
+                  ;;
+               ["nN"] )
+                  echo -e "\nOpération annulée.\n"
+                  ;;
+               * )
+                  echo -e "\nVeuillez répondre par (O/N) seulement."
+            esac
+         done
+      fi
+   fi
+}
+
+# Début du script       
+
+if (( $# > 0 )) ; then
+   echo -e "\nErreur, ce script ne doit pas recevoir de paramètres." >&2
+   echo -e "\nVous ne devez pas donner d'arguments après l'appel du script ex: (./compte)\n" >&2
+   exit 1
+elif (( UID != 0 )) ; then
+   echo -e "\nVous devez être root pour exécuter ce script.\n" >&2
+   exit 1
+fi
+echo -e "\nGestion des comptes utilisateurs\n"
+PS3="Entrez votre choix : "
+select choix in "Créer un compte" "Supprimer un compte" "Quitter" ; do
+   case $choix in 
+      "Créer un compte" )
+         creerCompte
+         ;;
+      "Supprimer un compte" )
+         supprimerCompte
+         ;;
+      "Quitter" )
+         echo -e "\nFin du script.\n"
+         exit
+         ;;
+      * )
+         echo -e "\n$REPLY est un mauvais choix, veuillez recommencer.\n"
+   esac
+   
+   REPLY=
+done

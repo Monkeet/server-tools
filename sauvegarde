@@ -1,0 +1,82 @@
+#!/usr/bin/bash
+
+# Auteur : Étienne St-Amant-Audet
+# Cours  : 420 217 MO
+# Date   : 27 novembre 2015
+#
+# Fichier : sauvegarde
+#
+# Ce script permet d'archiver le contenu du répertoire /etc ainsi
+# que le repertoire d'accueil d'un utilisateur. Le fichier d'archive 
+# ainsi créé sera par la suite sera copié dans le compte d'un autre 
+# utilisateur sur un ordinateur distant.
+#
+# Paramètres : Le nom de l'ordinateur distant ou son adresse IP et le nom 
+# de l'utilisateur.
+#
+# Prérequis : Le script sauve-etc
+#
+# Début du script
+
+# Validation que l'utilisateur n'est pas root
+
+if (( UID == 0 )) ; then
+   echo -e "\nVous ne devez pas être root pour exécuter ce script.\n" >&2
+   exit 1 
+fi
+
+ok="vrai"
+
+# Validation du nombre de paramètres
+
+if (( $# < 2 )) ; then
+   echo -e "\nErreur, il y a moins de deux paramètres envoyés au script.\n" >&2
+   ok="faux"
+elif (( $# > 2 )) ; then
+   echo -e "\nErreur, il y a plus de deux paramètres envoyés au script.\n" >&2
+   ok="faux"
+fi
+
+if [[ $ok == "faux" ]] ; then
+   echo -e "\nCe script doit recevoir deux paramètres." >&2
+   echo -e "\nVous devez mettre LES paramètres en argument juste après" >&2
+   echo -e "l'appel du script. Ex : $0 Ordinateur Utilisateur (distant)\n" >&2
+   exit 1
+fi
+
+# Sauvegarde du repertoire /etc
+
+echo -e "\nSauvegarde du repertoire /etc..\n"
+echo -e  "\nVous devez entrer le mot de passe de root\n"
+su -c "$HOME/bin/sauve-etc $USER"
+
+if (( $? != 0 )) ; then
+   echo -e "\nErreur, la sauvegarde de /etc a échouée.\n" >&2
+   exit 1
+fi
+
+# Sauvegarde du repertoire d'accueil de l'utilisateur
+
+echo -e "\nSauvegarde du repertoire d'accueil de $USER..\n"
+ficTemp=$(/usr/bin/mktemp)
+tar -C $HOME -cJf $ficTemp . &> /dev/null
+
+if (( $? != 0 )) ; then
+   echo -e "\nErreur, la sauvegarde de $HOME a échouée.\n" >&2
+   rm $ficTemp
+   exit 1
+fi
+
+# Copie de l'archive dans le compte de l'ordinateur distant
+
+echo -e "\nCopie de l'archive sur l'ordinateur $1 dans le compte $2..\n"
+scp $ficTemp $2@$1:$USER.txz &> /dev/null
+
+if (( $? != 0 )) ; then
+   echo -e "\nErreur, la copie vers l'ordinateur $1 a échouée.\n" >&2
+   rm $ficTemp
+   exit 1
+fi
+
+rm $ficTemp &> /dev/null
+echo -e "\nLa sauvegarde s'est terminée avec succès :)\n"
