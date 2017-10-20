@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# Vérification du compte
+
+if ! id "$1" >/dev/null 2>&1 ; then
+    tput bold
+    tput setaf 1
+    echo "Compte CPanel Invalide"
+    tput sgr0
+    exit 0
+
+# Si le scan ne roule pas déjà
+
+elif ! ps -ef | grep cxs | grep $1 >/dev/null ; then
+   /usr/sbin/cxs -U
+   /usr/sbin/cxs --mail scan@likuid.com --exploitscan --virusscan --sversionscan --nobayes -Q /backup/quarantine/ --options mMOLfSGchexdnwZRD --voptions hex --qoptions Mhxve --summary --html --ssl -C /var/clamd --nofallback -E -B --user $1
+
+# Si le scan roule déjà pour l'utilisateur
+
+else
+   tput bold
+   tput setaf 1
+   echo "Scan déjà en cours pour l'utilisateur $1"
+   tput sgr0
+fi
