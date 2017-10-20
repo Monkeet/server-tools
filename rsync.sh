@@ -6,15 +6,6 @@
 #
 # Fichier : Rsync.sh
 #
-# Ce script permet d'archiver le contenu du répertoire /etc ainsi
-# que le repertoire d'accueil d'un utilisateur. Le fichier d'archive 
-# ainsi créé sera par la suite sera copié dans le compte d'un autre 
-# utilisateur sur un ordinateur distant.
-#
-# Paramètres : Le nom de l'ordinateur distant ou son adresse IP et le nom 
-# de l'utilisateur.
-#
-#
 # Début du script
 
 # Validation que l'utilisateur n'est pas root
