@@ -4,7 +4,9 @@
 #          
 # Date   : 27 novembre 2015
 #
-# Fichier : Rsync.sh
+# Fichier : rsync.sh
+#
+# ATTENTION : Script encore en cours de développement!
 #
 # Début du script
 
