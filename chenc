@@ -3,7 +3,7 @@ FROM=iso-8859-1
 TO=UTF-8
 ICONV="iconv -f $FROM -t $TO"
 # Convert
-find . -maxdepth 1 -type f -name "*.java" | while read fn; do
+find . -maxdepth 1 -type f -name "$1" | while read fn; do
 cp ${fn} ${fn}.bak
 $ICONV < ${fn}.bak > ${fn}
 rm ${fn}.bak
