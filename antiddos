@@ -1,7 +1,0 @@
-#!/usr/bin/perl
-my @out = `/bin/netstat -ntu | awk '{print \$5}' | cut -d: -f1 | sort | uniq -c | sort -n`;
-foreach my $line (@out) {
-   $line =~ s/^\s+//;
-   my ($con,$ip) = split(" ",$line);
-   system("csf -d $ip")  if $con > 50;
-}

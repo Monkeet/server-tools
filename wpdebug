@@ -1,0 +1,84 @@
+#!/bin/bash
+#
+# Auteur :      Étienne St-Amant-Audet
+# 
+# Nom du script : debug-wp
+#
+# Ce script a pour but d'automatiser le débogage des wordpress pour trouver 
+# automatiquement le ou les plugins qui font défaut lorsqu'une erreur 500 
+# survient subitement sur un blog Wordpress.
+
+# Début du script
+
+# Vérification que le site est bien un wordpress
+
+CURRENT_DIR=$(pwd)
+     
+if [ ! -f $CURRENT_DIR/wp-config.php ]; then
+   tput bold
+   tput setaf 1
+   echo  "Il n'y a aucun wordpress dans ce répertoire!"
+   tput sgr0
+   exit 1
+fi
+
+# On retrouve le URL du site
+DB_NAME=$(cat $CURRENT_DIR/wp-config.php | grep DB_NAME | cut -d "'" -f 4)
+DB_USER=$(cat $CURRENT_DIR/wp-config.php | grep DB_USER | cut -d "'" -f 4)
+DB_PASS=$(cat $CURRENT_DIR/wp-config.php | grep DB_PASS | cut -d "'" -f 4)
+DB_PREFIX=$(cat $CURRENT_DIR/wp-config.php | grep table_prefix  | cut -d "'" -f 2)
+TABLE_OPTIONS=options
+WP_OPTIONS=$DB_PREFIX$TABLE_OPTIONS
+
+SQL_QUERY="SELECT option_value from $WP_OPTIONS WHERE option_name = 'siteurl';"
+SITE_URL=$(mysql -u $DB_USER -D $DB_NAME -p"$DB_PASS" -s -N -e "$SQL_QUERY" 2> /dev/null)
+
+# Vérification d'un erreur de site
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $SITE_URL)
+
+# Renommage des plugins
+
+if (( $HTTP_CODE == 500 )) ; then
+   plugin_responsable=$(mktemp)
+   for plugin in `find $CURRENT_DIR/wp-content/plugins/* -maxdepth 0 -type d`
+      do
+         if [[ ! $plugin =~ .*.BAK$ ]] ; then
+            mv $plugin $plugin.BAK
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $SITE_URL)
+            if (( $HTTP_CODE != 500 )) ; then
+               echo $plugin >> $plugin_responsable
+               break
+            fi
+         fi
+      done
+
+   # Reverse
+   for plugin in `find $CURRENT_DIR/wp-content/plugins/* -maxdepth 0 -type d`
+      do
+         if [[ $plugin =~ .*.BAK$ ]] ; then
+            new_plugin=$(echo $plugin | cut -f 1 -d '.')
+            mv $plugin $new_plugin
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $SITE_URL)
+            if (( $HTTP_CODE == 500 )) ; then
+               mv $new_plugin $plugin
+               echo $new_plugin >> $plugin_responsable
+            fi
+         fi
+      done
+   if [[ -s $plugin_responsable ]] ; then
+   tput bold
+   tput setaf 3
+   echo -e "Voici le plugin(s) responsable(s) de l'erreur : \
+   \n$(cat $plugin_responsable | sort | uniq | sed 's/.*\///')"
+   tput sgr0
+   fi
+
+else
+   tput bold
+   tput setaf 2
+   echo "Rien à déboguer :)"
+   tput sgr0
+
+fi
+
+exit 0
